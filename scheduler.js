@@ -3,10 +3,10 @@ const Contact = require("./models/Contact");
 const Template = require("./models/Template");
 const EmailLog = require("./models/EmailLog");
 const nodemailer = require("nodemailer");
+const dns = require("dns");
 const { fillTemplate } = require("./templateEngine");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
   host: "smtp.gmail.com",
   port: 465,
   secure: true,
@@ -14,7 +14,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  family: 4,
+  lookup: (hostname, options, callback) => {
+    dns.lookup(hostname, { family: 4 }, callback);
+  },
   connectionTimeout: 30000,
   greetingTimeout: 30000,
   socketTimeout: 30000

@@ -6,6 +6,7 @@ const multer = require("multer");
 const csv = require("csv-parser");
 const fs = require("fs");
 const XLSX = require("xlsx");
+const dns = require("dns");
 const Contact = require("./models/Contact");
 const Template = require("./models/Template");
 const EmailLog = require("./models/EmailLog");
@@ -31,7 +32,6 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log("Mongo Error:", err));
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
   host: "smtp.gmail.com",
   port: 465,
   secure: true,
@@ -39,7 +39,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  family: 4, // Force IPv4 to avoid ENETUNREACH on cloud environments
+  lookup: (hostname, options, callback) => {
+    dns.lookup(hostname, { family: 4 }, callback);
+  },
   connectionTimeout: 30000,
   greetingTimeout: 30000,
   socketTimeout: 30000,
