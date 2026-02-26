@@ -250,26 +250,20 @@ async function runOutreach() {
   const contacts = await Contact.find({ stage: "new" });
   console.log(`Found ${contacts.length} contacts in 'new' stage`);
 
-  let sent = 0;
-  for (let contact of contacts) {
+  const results = await Promise.all(contacts.map(async (contact) => {
     try {
-      console.log(`[OUTREACH] Processing: ${contact.email} (${contact.name})`);
       const html = fillTemplate(welcomeTemplate.htmlBody, { name: contact.name });
-      
-      console.log(`[OUTREACH] Sending mail via SendGrid...`);
       await sgMail.send({
         from: `Digital Vibe Solutions <${process.env.GMAIL_USER}>`,
         to: contact.email,
         subject: welcomeTemplate.subject,
         html: html
       });
-      console.log(`[OUTREACH] Success!`);
-      
+
       contact.stage = "contacted";
       contact.lastSentAt = new Date();
-      contact.nextFollowUpAt = new Date(Date.now() + (welcomeTemplate.delayDays || 0) * 24 * 60 * 60 * 1000);
+      contact.nextFollowUpAt = new Date(Date.now() + (welcomeTemplate.delayDays || 1) * 24 * 60 * 60 * 1000);
       await contact.save();
-      console.log(`[OUTREACH] Database updated for ${contact.email}`);
 
       await EmailLog.create({
         contactId: contact._id,
@@ -277,20 +271,22 @@ async function runOutreach() {
         sentAt: new Date(),
         status: "sent"
       });
-
-      sent++;
-    } catch (sendErr) {
-      console.error(`Failed to send to ${contact.email}:`, sendErr.message);
+      return { success: true };
+    } catch (err) {
+      console.error(`Failed to send to ${contact.email}:`, err.message);
       await EmailLog.create({
         contactId: contact._id,
         templateId: welcomeTemplate._id,
         sentAt: new Date(),
         status: "failed",
-        error: sendErr.message
+        error: err.message
       });
+      return { success: false };
     }
-  }
-  return sent;
+  }));
+
+  const sentCount = results.filter(r => r.success).length;
+  return sentCount;
 }
 
 // Campaign Controls
