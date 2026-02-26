@@ -128,34 +128,43 @@ app.get("/test-email", async (req, res) => {
       body: "Your lifetime free Gmail Bridge is correctly configured and reachable."
     };
     
-    console.log("[DEBUG] Sending test to Bridge:", process.env.GMAIL_BRIDGE_URL);
-    const response = await fetch(process.env.GMAIL_BRIDGE_URL, {
+    const bridgeUrl = process.env.GMAIL_BRIDGE_URL;
+    if (!bridgeUrl) {
+      return res.status(400).json({ success: false, error: "GMAIL_BRIDGE_URL is missing in Render environment variables." });
+    }
+
+    console.log("[DEBUG] Testing Bridge URL:", bridgeUrl);
+    
+    // Explicitly follow redirects and handle Google's security quirks
+    const response = await fetch(bridgeUrl, {
       method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(payload)
+      headers: { "Content-Type": "text/plain" }, // Standard for Google Apps Script
+      body: JSON.stringify(payload),
+      redirect: 'follow'
     });
     
     const rawText = await response.text();
-    console.log("[DEBUG] Raw response (first 100 chars):", rawText.substring(0, 100));
-
+    
     try {
       const result = JSON.parse(rawText);
       if (result.success) {
-        res.json({ success: true, message: "Bridge ready." });
+        res.json({ success: true, message: "Bridge ready! Test email sent." });
       } else {
-        throw new Error(result.error || "Bridge failed to send");
+        throw new Error(result.error || "Bridge failed internally");
       }
     } catch (parseErr) {
-      console.error("[PARSE ERROR]: Response was not JSON.");
+      // If parsing fails, it's HTML. This happens if permissions are wrong.
+      console.error("[DEBUG] Non-JSON response received. Likely HTML error page.");
       res.status(500).json({ 
         success: false, 
-        error: "Bridge returned HTML (likely a permission issue)", 
-        rawResponseSnippet: rawText.substring(0, 500) 
+        error: "Bridge returned HTML instead of JSON.",
+        advice: "1. Ensure you used v2 of the script. 2. Verify 'Who has access' is set to 'Anyone' (NOT anyone with a Google account). 3. Ensure you 'Authorized Access' when prompted.",
+        debugSnippet: rawText.substring(0, 300)
       });
     }
   } catch (err) {
-    console.error("[BRIDGE ERROR]:", err.message);
-    res.status(500).json({ success: false, error: err.message });
+    console.error("[BRIDGE CONNECTION ERROR]:", err.message);
+    res.status(500).json({ success: false, error: "Failed to connect to Bridge: " + err.message });
   }
 });
 
