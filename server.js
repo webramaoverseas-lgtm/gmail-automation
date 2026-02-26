@@ -128,18 +128,33 @@ app.get("/test-email", async (req, res) => {
       body: "Your lifetime free Gmail Bridge is correctly configured and reachable."
     };
     
+    console.log("[DEBUG] Sending test to Bridge:", process.env.GMAIL_BRIDGE_URL);
     const response = await fetch(process.env.GMAIL_BRIDGE_URL, {
       method: "POST",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(payload)
     });
     
-    const result = await response.json();
-    if (result.success) {
-      res.json({ success: true, message: "Bridge ready." });
-    } else {
-      throw new Error(result.error || "Bridge failed to send");
+    const rawText = await response.text();
+    console.log("[DEBUG] Raw response (first 100 chars):", rawText.substring(0, 100));
+
+    try {
+      const result = JSON.parse(rawText);
+      if (result.success) {
+        res.json({ success: true, message: "Bridge ready." });
+      } else {
+        throw new Error(result.error || "Bridge failed to send");
+      }
+    } catch (parseErr) {
+      console.error("[PARSE ERROR]: Response was not JSON.");
+      res.status(500).json({ 
+        success: false, 
+        error: "Bridge returned HTML (likely a permission issue)", 
+        rawResponseSnippet: rawText.substring(0, 500) 
+      });
     }
   } catch (err) {
+    console.error("[BRIDGE ERROR]:", err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
