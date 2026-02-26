@@ -7,6 +7,9 @@ const csv = require("csv-parser");
 const fs = require("fs");
 const XLSX = require("xlsx");
 const dns = require("dns");
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 const Contact = require("./models/Contact");
 const Template = require("./models/Template");
 const EmailLog = require("./models/EmailLog");
@@ -40,7 +43,11 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   },
   lookup: (hostname, options, callback) => {
-    dns.lookup(hostname, { family: 4 }, callback);
+    console.log(`[DNS] Resolving ${hostname} (forcing IPv4)`);
+    dns.lookup(hostname, { family: 4 }, (err, address, family) => {
+      console.log(`[DNS] Resolved ${hostname} to ${address} (family: ${family})`);
+      callback(err, address, family);
+    });
   },
   connectionTimeout: 30000,
   greetingTimeout: 30000,

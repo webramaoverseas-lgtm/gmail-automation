@@ -4,6 +4,9 @@ const Template = require("./models/Template");
 const EmailLog = require("./models/EmailLog");
 const nodemailer = require("nodemailer");
 const dns = require("dns");
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 const { fillTemplate } = require("./templateEngine");
 
 const transporter = nodemailer.createTransport({
@@ -15,7 +18,11 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   },
   lookup: (hostname, options, callback) => {
-    dns.lookup(hostname, { family: 4 }, callback);
+    console.log(`[SCHEDULER DNS] Resolving ${hostname} (forcing IPv4)`);
+    dns.lookup(hostname, { family: 4 }, (err, address, family) => {
+      console.log(`[SCHEDULER DNS] Resolved ${hostname} to ${address} (family: ${family})`);
+      callback(err, address, family);
+    });
   },
   connectionTimeout: 30000,
   greetingTimeout: 30000,
