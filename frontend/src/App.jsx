@@ -352,19 +352,33 @@ function Campaign({ refresh, loading, setLoading }) {
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    await axios.post(`${API}/upload`, formData);
-    refresh();
-    alert("Contacts Uploaded Successfully");
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      await axios.post(`${API}/upload`, formData);
+      refresh();
+      alert("Contacts Uploaded Successfully");
+    } catch (err) {
+      console.error("Upload Error:", err);
+      alert("Upload failed. Check console for details.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const launch = async () => {
-    setLoading(true);
-    await axios.post(`${API}/launch`);
-    setLoading(false);
-    refresh();
-    alert("Outreach Campaign Launched! Welcome emails sent.");
+    try {
+      setLoading(true);
+      const res = await axios.post(`${API}/launch`);
+      alert(`Outreach Campaign Launched! ${res.data.count} Welcome emails sent.`);
+    } catch (err) {
+      console.error("Launch Error:", err);
+      alert("Campaign launch failed: " + (err.response?.data?.error || err.message));
+    } finally {
+      setLoading(false);
+      refresh();
+    }
   };
 
   return (
