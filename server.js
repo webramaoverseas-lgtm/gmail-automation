@@ -31,7 +31,9 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log("Mongo Error:", err));
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // Use SSL
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -256,19 +258,23 @@ async function runOutreach() {
   let sent = 0;
   for (let contact of contacts) {
     try {
-      console.log(`Attempting to send to: ${contact.email}`);
+      console.log(`[OUTREACH] Processing: ${contact.email} (${contact.name})`);
       const html = fillTemplate(welcomeTemplate.htmlBody, { name: contact.name });
-      await transporter.sendMail({
-        from: process.env.GMAIL_USER,
+      
+      console.log(`[OUTREACH] Sending mail...`);
+      const info = await transporter.sendMail({
+        from: `Digital Vibe Solutions <${process.env.GMAIL_USER}>`,
         to: contact.email,
         subject: welcomeTemplate.subject,
         html: html
       });
+      console.log(`[OUTREACH] Success! MessageID: ${info.messageId}`);
       
       contact.stage = "contacted";
       contact.lastSentAt = new Date();
       contact.nextFollowUpAt = new Date(Date.now() + (welcomeTemplate.delayDays || 0) * 24 * 60 * 60 * 1000);
       await contact.save();
+      console.log(`[OUTREACH] Database updated for ${contact.email}`);
 
       await EmailLog.create({
         contactId: contact._id,
