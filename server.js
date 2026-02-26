@@ -176,6 +176,8 @@ app.get("/test-network", async (req, res) => {
 
     results.connectivity["465"] = await testPort("smtp.gmail.com", 465);
     results.connectivity["587"] = await testPort("smtp.gmail.com", 587);
+    results.connectivity["443"] = await testPort("smtp.gmail.com", 443);
+    results.connectivity["google_ping"] = await testPort("google.com", 80);
 
     res.json(results);
   } catch (err) {
