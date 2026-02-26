@@ -349,7 +349,6 @@ app.post("/run-automation", async (req, res) => {
   }
 });
 
-const { runScheduler } = require("./scheduler");
 
 app.post("/mark-replied/:email", async (req, res) => {
   const contact = await Contact.findOne({ email: req.params.email });
