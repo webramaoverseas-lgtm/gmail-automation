@@ -42,16 +42,17 @@ async function checkReplies() {
         console.log(`Match found! Reply from: ${fromEmail}`);
         
         const snippet = parsed.text.substring(0, 200).toLowerCase();
+        console.log(`[DEBUG] Analyzing snippet: "${snippet}"`);
         
-        // --- SENTIMENT ANALYSIS ---
-        const negativeKeywords = ["not interested", "unsubscribe", "stop", "remove", "don't contact", "no thanks", "discard", "quit"];
-        const isNegative = negativeKeywords.some(keyword => snippet.includes(keyword));
+        // --- IMPROVED SENTIMENT ANALYSIS (Regex) ---
+        const negativePattern = /not interested|unsubscribe|stop|remove|don't contact|no thanks|discard|quit|disinterested|no interest|don't want/i;
+        const isNegative = negativePattern.test(snippet);
 
         if (isNegative) {
-          console.log(`[SENTIMENT] Negative reply detected from ${fromEmail}. Redirecting to re-engagement or LTO.`);
+          console.log(`[SENTIMENT] Negative reply detected from ${fromEmail}. Sentiment: NEGATIVE`);
           contact.sentiment = "negative";
         } else {
-          console.log(`[SENTIMENT] Positive/Neutral reply from ${fromEmail}. Proceeding to conversion.`);
+          console.log(`[SENTIMENT] No negative keywords found from ${fromEmail}. Sentiment: POSITIVE`);
           contact.sentiment = "positive";
         }
 
