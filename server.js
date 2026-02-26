@@ -122,6 +122,23 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", message: "DigitalVibe Backend is running!" });
 });
 
+// SMTP Test
+app.get("/test-email", async (req, res) => {
+  try {
+    await transporter.verify();
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: process.env.GMAIL_USER,
+      subject: "SMTP Test Reachable",
+      text: "If you see this, your Gmail SMTP is working!"
+    });
+    res.json({ success: true, message: "Test email sent!" });
+  } catch (err) {
+    console.error("SMTP Error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Tracking & Analytics
 app.get("/analytics", async (req, res) => {
   try {
@@ -278,8 +295,19 @@ async function runOutreach() {
 // Campaign Controls
 app.post("/launch", async (req, res) => {
   try {
-    const sent = await runOutreach();
-    res.json({ message: "Campaign launched", count: sent });
+    const contactsCount = await Contact.countDocuments({ stage: "new" });
+    if (contactsCount === 0) {
+      return res.status(400).json({ error: "No new contacts to email. Please upload a file first." });
+    }
+    
+    // Trigger in background to avoid timeout
+    runOutreach().then(sent => {
+      console.log(`Background outreach finished. Sent: ${sent}`);
+    }).catch(err => {
+      console.error("Background outreach error:", err);
+    });
+
+    res.json({ message: "Campaign started in background.", count: contactsCount });
   } catch (err) {
     console.error("Launch Error:", err);
     res.status(500).json({ error: err.message });

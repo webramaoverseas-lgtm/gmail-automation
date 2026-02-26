@@ -371,7 +371,7 @@ function Campaign({ refresh, loading, setLoading }) {
     try {
       setLoading(true);
       const res = await axios.post(`${API}/launch`);
-      alert(`Outreach Campaign Launched! ${res.data.count} Welcome emails sent.`);
+      alert(`Outreach Campaign Started! Processing ${res.data.count} contacts in the background. Check refresh in 1 minute.`);
     } catch (err) {
       console.error("Launch Error:", err);
       alert("Campaign launch failed: " + (err.response?.data?.error || err.message));
