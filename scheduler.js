@@ -37,38 +37,55 @@ async function runScheduler(specificContactId = null) {
 
       if (contact.stage === "contacted") {
         if (contact.replied) {
-          nextTemplateName = "Conversion";
-          newStage = "interested";
-          nextStep = 1;
+          if (contact.sentiment === "positive") {
+            nextTemplateName = "Conversion";
+            newStage = "interested";
+            nextStep = 1;
+          } else {
+            // Negative reply to Welcome -> Re-engagement (User said automatically)
+            nextTemplateName = "Re-engagement";
+            newStage = "re-engaged";
+            nextStep = 1;
+          }
         } else {
+          // No reply to Welcome -> Re-engagement (after 2 days)
           nextTemplateName = "Re-engagement";
           newStage = "re-engaged";
           nextStep = 1;
         }
       } else if (contact.stage === "re-engaged") {
         if (contact.replied) {
-          nextTemplateName = "Conversion";
-          newStage = "interested";
-          nextStep = 1;
+          if (contact.sentiment === "positive") {
+            nextTemplateName = "Conversion";
+            newStage = "interested";
+            nextStep = 2; // Jump to specialized step
+          } else {
+            // Negative reply to Re-engagement -> LTO after 2 days
+            nextTemplateName = "Limited Time Offer";
+            newStage = "lto";
+            nextStep = 2;
+          }
         } else {
+          // No reply to Re-engagement -> LTO
           nextTemplateName = "Limited Time Offer";
           newStage = "lto";
           nextStep = 2;
         }
       } else if (contact.stage === "interested") {
-        if (contact.replied) {
+        if (contact.replied && contact.sentiment === "positive") {
           contact.stage = "converted";
           contact.sequenceStep = 3;
           await contact.save();
           console.log(`Contact ${contact.email} is now CONVERTED!`);
           return;
         } else {
+          // No reply or Negative reply to Conversion -> LTO
           nextTemplateName = "Limited Time Offer";
           newStage = "lto";
           nextStep = 2;
         }
       } else if (contact.stage === "lto") {
-        if (contact.replied) {
+        if (contact.replied && contact.sentiment === "positive") {
           contact.stage = "converted";
           contact.sequenceStep = 3;
           await contact.save();
@@ -107,7 +124,11 @@ async function runScheduler(specificContactId = null) {
       contact.sequenceStep = nextStep;
       contact.lastSentAt = now;
       contact.replied = false;
-      contact.nextFollowUpAt = new Date(now.getTime() + (template.delayDays || 3) * 24 * 60 * 60 * 1000);
+      contact.sentiment = "neutral"; // Reset for next stage
+      
+      // User says "send mail after 2 days" consistently
+      const delay = 2 * 24 * 60 * 60 * 1000;
+      contact.nextFollowUpAt = new Date(now.getTime() + delay);
       await contact.save();
 
       await EmailLog.create({

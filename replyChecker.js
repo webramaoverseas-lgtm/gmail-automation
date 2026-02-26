@@ -48,27 +48,37 @@ async function checkReplies() {
         const isNegative = negativeKeywords.some(keyword => snippet.includes(keyword));
 
         if (isNegative) {
-          console.log(`[SENTIMENT] Negative reply detected from ${fromEmail}. Opting out.`);
-          contact.optedOut = true;
+          console.log(`[SENTIMENT] Negative reply detected from ${fromEmail}. Redirecting to re-engagement or LTO.`);
+          contact.sentiment = "negative";
         } else {
-          console.log(`[SENTIMENT] Positive/Neutral reply from ${fromEmail}. Proceeding with sequence.`);
-          contact.replied = true;
-          contact.repliedAt = new Date();
-          contact.nextFollowUpAt = new Date(); // Trigger immediate next action on cron
+          console.log(`[SENTIMENT] Positive/Neutral reply from ${fromEmail}. Proceeding to conversion.`);
+          contact.sentiment = "positive";
         }
 
+        contact.replied = true;
+        contact.repliedAt = new Date();
         contact.lastReplySnippet = parsed.text.substring(0, 200);
         contact.replyHistory.push({
           body: parsed.text,
           date: new Date()
         });
 
+        // Set Next Follow-up timing based on logic:
+        if (contact.sentiment === "negative" && contact.stage === "contacted") {
+          // Negative reply to Welcome -> Send Re-engagement IMMEDIATELY
+          contact.nextFollowUpAt = new Date();
+        } else if (contact.sentiment === "negative" && contact.stage === "re-engaged") {
+          // Negative reply to Re-engagement -> Send LTO after 2 DAYS
+          contact.nextFollowUpAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+        } else {
+          // Positive reply OR No-Reply 2-day logic (handled in scheduler)
+          contact.nextFollowUpAt = new Date(); // Trigger scheduler immediately to check and send next step
+        }
+
         await contact.save();
 
-        if (!isNegative) {
-          // Trigger scheduler for this contact immediately if interested
-          await runScheduler(contact._id.toString());
-        }
+        // Trigger scheduler for this contact immediately
+        await runScheduler(contact._id.toString());
 
         // Mark as seen so we don't process it again
         await connection.addFlags(id, "\Seen");

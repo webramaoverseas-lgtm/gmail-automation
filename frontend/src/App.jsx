@@ -230,6 +230,11 @@ function ContactsTable({ contacts, refresh }) {
     refresh();
   };
 
+  const negativeReply = async (email) => {
+    await axios.post(`${API}/negative-reply/${email}`);
+    refresh();
+  };
+
   return (
     <div>
       <h1 style={{ marginBottom: "32px" }}>Contacts</h1>
@@ -252,12 +257,18 @@ function ContactsTable({ contacts, refresh }) {
                 <td style={{ color: "var(--text-dim)" }}>{c.email}</td>
                 <td><span className={`badge badge-${c.stage}`}>{c.stage}</span></td>
                 <td>Step {c.sequenceStep + 1}</td>
-                <td>
-                    {c.optedOut ? <span style={{color: "var(--badge-lto)"}}>Opted Out</span> : (c.replied ? "Replied ✅" : "Sent 📩")}
+                 <td>
+                    {c.optedOut ? <span style={{color: "var(--badge-lto)"}}>Opted Out</span> : (
+                      c.sentiment === "negative" ? <span style={{color: "#fbbf24"}}>Not Interested 📩</span> : 
+                      (c.replied ? "Replied ✅" : "Sent 📩")
+                    )}
                 </td>
                 <td>
                   {!c.replied && !c.optedOut && c.stage !== "converted" && (
-                    <button onClick={() => markReplied(c.email)} style={{ background: "none", border: "1px solid #fbbf24", color: "#fbbf24", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", marginRight: "8px", cursor: "pointer" }}>Mark Reply</button>
+                    <button onClick={() => markReplied(c.email)} style={{ background: "none", border: "1px solid #10b981", color: "#10b981", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", marginRight: "8px", cursor: "pointer" }}>Interested</button>
+                  )}
+                  {c.stage === "contacted" && !c.optedOut && c.sentiment !== "negative" && (
+                    <button onClick={() => negativeReply(c.email)} style={{ background: "none", border: "1px solid #fbbf24", color: "#fbbf24", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", marginRight: "8px", cursor: "pointer" }}>Not Interested</button>
                   )}
                   {!c.optedOut && (
                     <button onClick={() => optOut(c.email)} style={{ background: "none", border: "1px solid #f43f5e", color: "#f43f5e", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}>Opt Out</button>

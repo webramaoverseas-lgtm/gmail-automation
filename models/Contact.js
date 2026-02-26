@@ -31,6 +31,12 @@ const contactSchema = new mongoose.Schema({
   optedOut: {
     type: Boolean,
     default: false
+  },
+
+  sentiment: {
+    type: String,
+    enum: ["neutral", "positive", "negative"],
+    default: "neutral"
   }
 }, { timestamps: true });
 

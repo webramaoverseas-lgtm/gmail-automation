@@ -351,10 +351,21 @@ app.post("/run-automation", async (req, res) => {
 app.post("/mark-replied/:email", async (req, res) => {
   await Contact.updateOne({ email: req.params.email }, { 
     replied: true, 
+    sentiment: "positive", // Manual marking usually implies positive if using 'Mark Reply'
     repliedAt: new Date(),
-    nextFollowUpAt: new Date() // Trigger immediate next action on next cron tick
+    nextFollowUpAt: new Date() 
   });
-  res.json({ message: "Marked replied" });
+  res.json({ message: "Marked positive reply" });
+});
+
+app.post("/negative-reply/:email", async (req, res) => {
+  await Contact.updateOne({ email: req.params.email }, { 
+    replied: true, 
+    sentiment: "negative",
+    repliedAt: new Date(),
+    nextFollowUpAt: new Date() 
+  });
+  res.json({ message: "Marked negative reply" });
 });
 
 app.post("/opt-out/:email", async (req, res) => {
