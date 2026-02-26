@@ -268,12 +268,13 @@ async function runOutreach() {
   const results = await Promise.all(contacts.map(async (contact) => {
     try {
       const html = fillTemplate(welcomeTemplate.htmlBody, { name: contact.name });
+      const subject = fillTemplate(welcomeTemplate.subject, { name: contact.name });
       
       const response = await fetch(process.env.GMAIL_BRIDGE_URL, {
         method: "POST",
         body: JSON.stringify({
           to: contact.email,
-          subject: welcomeTemplate.subject,
+          subject: subject,
           body: html,
           isHtml: true
         })

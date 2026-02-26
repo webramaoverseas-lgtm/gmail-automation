@@ -107,13 +107,14 @@ async function runScheduler(specificContactId = null) {
       }
 
       const html = fillTemplate(template.htmlBody, { name: contact.name });
+      const subject = fillTemplate(template.subject, { name: contact.name });
       console.log(`[SCHEDULER] Sending follow-up to ${contact.email} via Gmail Bridge...`);
       
       const response = await fetch(process.env.GMAIL_BRIDGE_URL, {
         method: "POST",
         body: JSON.stringify({
           to: contact.email,
-          subject: template.subject,
+          subject: subject,
           body: html,
           isHtml: true
         })
