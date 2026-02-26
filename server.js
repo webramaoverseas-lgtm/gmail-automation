@@ -15,8 +15,7 @@ const EmailLog = require("./models/EmailLog");
 const { runScheduler } = require("./scheduler");
 const { startReplyChecker } = require("./replyChecker");
 const { fillTemplate } = require("./templateEngine");
-const sgMail = require("@sendgrid/mail");
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Using native fetch for the Gmail Bridge
 
 const app = express();
 app.use(express.json());
@@ -34,8 +33,8 @@ mongoose.connect(process.env.MONGO_URI)
   })
   .catch(err => console.log("Mongo Error:", err));
 
-if (!process.env.SENDGRID_API_KEY) {
-  console.error("CRITICAL: SENDGRID_API_KEY environment variable is MISSING on Render!");
+if (!process.env.GMAIL_BRIDGE_URL) {
+  console.error("CRITICAL: GMAIL_BRIDGE_URL environment variable is MISSING on Render!");
 }
 
 /* =========================
@@ -120,17 +119,26 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", message: "DigitalVibe Backend is running!" });
 });
 
-// Email Status Check
+// Email Status Check (Now via Gmail Bridge)
 app.get("/test-email", async (req, res) => {
   try {
-    const msg = {
+    const payload = {
       to: process.env.GMAIL_USER,
-      from: process.env.GMAIL_USER,
-      subject: "SendGrid Active",
-      text: "SendGrid API is correctly configured and reachable."
+      subject: "Gmail Bridge Active",
+      body: "Your lifetime free Gmail Bridge is correctly configured and reachable."
     };
-    await sgMail.send(msg);
-    res.json({ success: true, message: "System ready." });
+    
+    const response = await fetch(process.env.GMAIL_BRIDGE_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      res.json({ success: true, message: "Bridge ready." });
+    } else {
+      throw new Error(result.error || "Bridge failed to send");
+    }
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -253,12 +261,19 @@ async function runOutreach() {
   const results = await Promise.all(contacts.map(async (contact) => {
     try {
       const html = fillTemplate(welcomeTemplate.htmlBody, { name: contact.name });
-      await sgMail.send({
-        from: `Digital Vibe Solutions <${process.env.GMAIL_USER}>`,
-        to: contact.email,
-        subject: welcomeTemplate.subject,
-        html: html
+      
+      const response = await fetch(process.env.GMAIL_BRIDGE_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          to: contact.email,
+          subject: welcomeTemplate.subject,
+          body: html,
+          isHtml: true
+        })
       });
+
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
 
       contact.stage = "contacted";
       contact.lastSentAt = new Date();

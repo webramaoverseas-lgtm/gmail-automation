@@ -2,8 +2,7 @@ const cron = require("node-cron");
 const Contact = require("./models/Contact");
 const Template = require("./models/Template");
 const EmailLog = require("./models/EmailLog");
-const sgMail = require("@sendgrid/mail");
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Native fetch for Gmail Bridge
 const dns = require("dns");
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
@@ -87,13 +86,21 @@ async function runScheduler(specificContactId = null) {
       }
 
       const html = fillTemplate(template.htmlBody, { name: contact.name });
-      console.log(`[SCHEDULER] Sending follow-up to ${contact.email} via SendGrid...`);
-      await sgMail.send({
-        from: `Digital Vibe Solutions <${process.env.GMAIL_USER}>`,
-        to: contact.email,
-        subject: template.subject,
-        html: html
+      console.log(`[SCHEDULER] Sending follow-up to ${contact.email} via Gmail Bridge...`);
+      
+      const response = await fetch(process.env.GMAIL_BRIDGE_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          to: contact.email,
+          subject: template.subject,
+          body: html,
+          isHtml: true
+        })
       });
+
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      
       console.log(`[SCHEDULER] Success!`);
 
       contact.stage = newStage;
