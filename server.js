@@ -33,14 +33,21 @@ mongoose.connect(process.env.MONGO_URI)
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
-  secure: true, // Use SSL
+  secure: true, 
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
+  connectionTimeout: 10000, // 10s
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
   logger: true,
   debug: true
 });
+
+if (!process.env.GMAIL_USER || !process.env.EMAIL_PASS) {
+  console.error("CRITICAL: GMAIL_USER or EMAIL_PASS environment variables are MISSING!");
+}
 
 /* =========================
    SEED DATA
