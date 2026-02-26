@@ -172,7 +172,8 @@ app.get("/test-network", async (req, res) => {
 
     results.connectivity["465"] = await testPort("smtp.gmail.com", 465);
     results.connectivity["587"] = await testPort("smtp.gmail.com", 587);
-    results.connectivity["direct_ip_465"] = await testPort("74.125.143.108", 465); // Test direct IPv4
+    results.connectivity["direct_ip_465"] = await testPort("74.125.143.108", 465);
+    results.connectivity["sendgrid_api"] = await testPort("api.sendgrid.com", 443); // Test API-based email connectivity
     results.connectivity["google_ping"] = await testPort("google.com", 80);
 
     res.json(results);
