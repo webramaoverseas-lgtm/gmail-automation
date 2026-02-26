@@ -7,10 +7,14 @@ const { fillTemplate } = require("./templateEngine");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
+  family: 4,
   connectionTimeout: 30000,
   greetingTimeout: 30000,
   socketTimeout: 30000
