@@ -21,11 +21,10 @@ async function runScheduler(specificContactId = null) {
 
   // Query contacts: either a specific one (immediate trigger) OR all due ones
   let query;
-  if (specificContactId) {
-    // If it's already an object with _id, use it directly, else wrap it
-    query = (typeof specificContactId === 'object' && specificContactId._id) 
-      ? specificContactId 
-      : { _id: specificContactId };
+  if (specificContactId && (typeof specificContactId === 'string' || mongoose.Types.ObjectId.isValid(specificContactId))) {
+    query = { _id: specificContactId };
+  } else if (specificContactId && typeof specificContactId === 'object' && specificContactId._id) {
+    query = { _id: specificContactId._id };
   } else {
     query = { nextFollowUpAt: { $lte: now }, optedOut: false, stage: { $nin: ["converted"] } };
   }
@@ -147,6 +146,6 @@ async function runScheduler(specificContactId = null) {
 }
 
 // Tick every hour
-cron.schedule("0 * * * *", runScheduler);
+cron.schedule("0 * * * *", () => runScheduler());
 
 module.exports = { runScheduler };
