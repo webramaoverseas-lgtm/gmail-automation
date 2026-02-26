@@ -2,28 +2,15 @@ const cron = require("node-cron");
 const Contact = require("./models/Contact");
 const Template = require("./models/Template");
 const EmailLog = require("./models/EmailLog");
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const dns = require("dns");
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }
 const { fillTemplate } = require("./templateEngine");
 
-const transporter = nodemailer.createTransport({
-  host: "74.125.143.108",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    servername: "smtp.gmail.com"
-  },
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000
-});
+// No transporter needed for SendGrid API
 
 async function runScheduler(specificContactId = null) {
   console.log("--- Running Scheduler Tick ---");
@@ -117,15 +104,14 @@ async function runScheduler(specificContactId = null) {
 
       // Send Email
       const html = fillTemplate(template.htmlBody, { name: contact.name });
-      
-      await transporter.sendMail({
-        from: process.env.GMAIL_USER,
+      console.log(`[SCHEDULER] Sending follow-up to ${contact.email} via SendGrid...`);
+      await sgMail.send({
+        from: `Digital Vibe Solutions <${process.env.GMAIL_USER}>`,
         to: contact.email,
         subject: template.subject,
         html: html
       });
-
-      console.log(`Sent ${nextTemplateName} to ${contact.email}`);
+      console.log(`[SCHEDULER] Success!`);
 
       // Update Contact
       contact.stage = newStage;

@@ -17,7 +17,8 @@ const EmailLog = require("./models/EmailLog");
 const { runScheduler } = require("./scheduler");
 const { startReplyChecker } = require("./replyChecker");
 const { fillTemplate } = require("./templateEngine");
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const app = express();
 app.use(express.json());
@@ -35,26 +36,8 @@ mongoose.connect(process.env.MONGO_URI)
   })
   .catch(err => console.log("Mongo Error:", err));
 
-const transporter = nodemailer.createTransport({
-  host: "74.125.143.108", // Force Gmail IPv4 (Resolved from smtp.gmail.com)
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    servername: "smtp.gmail.com" // Critical for SSL validation when using IP
-  },
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-  logger: true,
-  debug: true
-});
-
-if (!process.env.GMAIL_USER || !process.env.EMAIL_PASS) {
-  console.error("CRITICAL: GMAIL_USER or EMAIL_PASS environment variables are MISSING on Render!");
+if (!process.env.SENDGRID_API_KEY) {
+  console.error("CRITICAL: SENDGRID_API_KEY environment variable is MISSING on Render!");
 }
 
 /* =========================
@@ -182,33 +165,29 @@ app.get("/test-network", async (req, res) => {
   }
 });
 
-// SMTP Test
+// SMTP Test (Now via SendGrid API)
 app.get("/test-email", async (req, res) => {
   try {
-    console.log("[DEBUG] Starting SMTP test...");
-    console.log("[DEBUG] Env user:", process.env.GMAIL_USER ? "FOUND" : "MISSING");
-    console.log("[DEBUG] Env pass:", process.env.EMAIL_PASS ? "FOUND" : "MISSING");
+    console.log("[DEBUG] Starting SendGrid API test...");
+    console.log("[DEBUG] Env key:", process.env.SENDGRID_API_KEY ? "FOUND" : "MISSING");
     
-    await transporter.verify();
-    console.log("[DEBUG] SMTP Verified!");
-    
-    const info = await transporter.sendMail({
-      from: `Digital Vibe <${process.env.GMAIL_USER}>`,
+    const msg = {
       to: process.env.GMAIL_USER,
-      subject: "SMTP Test Reachable",
-      text: "If you see this, your Gmail SMTP is working!"
-    });
-    console.log("[DEBUG] Mail sent:", info.messageId);
-    res.json({ success: true, message: "Test email sent!", id: info.messageId });
+      from: process.env.GMAIL_USER, // Must be verified in SendGrid
+      subject: "SendGrid API Test Reachable",
+      text: "If you see this, your SendGrid API integration is working!"
+    };
+    
+    await sgMail.send(msg);
+    console.log("[DEBUG] API Mail sent successfully");
+    res.json({ success: true, message: "Test email sent via SendGrid API!" });
   } catch (err) {
-    console.error("[SMTP ERROR]:", err);
+    console.error("[SENDGRID ERROR]:", err);
     res.status(500).json({ 
       success: false, 
       error: err.message, 
-      code: err.code,
-      command: err.command,
-      env_user: process.env.GMAIL_USER ? "Present" : "MISSING",
-      env_pass: process.env.EMAIL_PASS ? "Present" : "MISSING",
+      response: err.response ? err.response.body : null,
+      env_key: process.env.SENDGRID_API_KEY ? "Present" : "MISSING",
       stack: err.stack 
     });
   }
@@ -334,14 +313,14 @@ async function runOutreach() {
       console.log(`[OUTREACH] Processing: ${contact.email} (${contact.name})`);
       const html = fillTemplate(welcomeTemplate.htmlBody, { name: contact.name });
       
-      console.log(`[OUTREACH] Sending mail...`);
-      const info = await transporter.sendMail({
+      console.log(`[OUTREACH] Sending mail via SendGrid...`);
+      await sgMail.send({
         from: `Digital Vibe Solutions <${process.env.GMAIL_USER}>`,
         to: contact.email,
         subject: welcomeTemplate.subject,
         html: html
       });
-      console.log(`[OUTREACH] Success! MessageID: ${info.messageId}`);
+      console.log(`[OUTREACH] Success!`);
       
       contact.stage = "contacted";
       contact.lastSentAt = new Date();
