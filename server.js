@@ -349,24 +349,36 @@ app.post("/run-automation", async (req, res) => {
   }
 });
 
+const { runScheduler } = require("./scheduler");
+
 app.post("/mark-replied/:email", async (req, res) => {
-  await Contact.updateOne({ email: req.params.email }, { 
-    replied: true, 
-    sentiment: "positive", // Manual marking usually implies positive if using 'Mark Reply'
-    repliedAt: new Date(),
-    nextFollowUpAt: new Date() 
-  });
-  res.json({ message: "Marked positive reply" });
+  const contact = await Contact.findOne({ email: req.params.email });
+  if (!contact) return res.status(404).json({ error: "Contact not found" });
+
+  contact.replied = true;
+  contact.sentiment = "positive";
+  contact.repliedAt = new Date();
+  contact.nextFollowUpAt = new Date();
+  await contact.save();
+
+  // Trigger immediate flow
+  await runScheduler(contact._id.toString());
+  res.json({ message: "Marked positive reply and triggered flow" });
 });
 
 app.post("/negative-reply/:email", async (req, res) => {
-  await Contact.updateOne({ email: req.params.email }, { 
-    replied: true, 
-    sentiment: "negative",
-    repliedAt: new Date(),
-    nextFollowUpAt: new Date() 
-  });
-  res.json({ message: "Marked negative reply" });
+  const contact = await Contact.findOne({ email: req.params.email });
+  if (!contact) return res.status(404).json({ error: "Contact not found" });
+
+  contact.replied = true;
+  contact.sentiment = "negative";
+  contact.repliedAt = new Date();
+  contact.nextFollowUpAt = new Date();
+  await contact.save();
+
+  // Trigger immediate flow
+  await runScheduler(contact._id.toString());
+  res.json({ message: "Marked negative reply and triggered flow" });
 });
 
 app.post("/opt-out/:email", async (req, res) => {
