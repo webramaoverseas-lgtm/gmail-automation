@@ -1,6 +1,4 @@
-require("dotenv").config();
 const express = require("express");
-const net = require("net");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const multer = require("multer");
@@ -122,74 +120,19 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", message: "DigitalVibe Backend is running!" });
 });
 
-app.get("/test-network", async (req, res) => {
-  const results = {
-    dns: {},
-    connectivity: {}
-  };
-
-  try {
-    // 1. DNS Resolution
-    results.dns.ipv4 = await new Promise(r => dns.resolve4("smtp.gmail.com", (err, addr) => r(err ? err.message : addr)));
-    results.dns.ipv6 = await new Promise(r => dns.resolve6("smtp.gmail.com", (err, addr) => r(err ? err.message : addr)));
-    results.dns.lookup = await new Promise(r => dns.lookup("smtp.gmail.com", (err, addr) => r(err ? err.message : addr)));
-
-    // 2. TCP Connectivity
-    const testPort = (host, port) => new Promise(r => {
-      const socket = new net.Socket();
-      socket.setTimeout(5000);
-      socket.on("connect", () => {
-        socket.destroy();
-        r({ status: "success" });
-      });
-      socket.on("timeout", () => {
-        socket.destroy();
-        r({ status: "timeout" });
-      });
-      socket.on("error", (err) => {
-        socket.destroy();
-        r({ status: "error", message: err.message });
-      });
-      socket.connect(port, host);
-    });
-
-    results.connectivity["465"] = await testPort("smtp.gmail.com", 465);
-    results.connectivity["587"] = await testPort("smtp.gmail.com", 587);
-    results.connectivity["direct_ip_465"] = await testPort("74.125.143.108", 465);
-    results.connectivity["sendgrid_api"] = await testPort("api.sendgrid.com", 443); // Test API-based email connectivity
-    results.connectivity["google_ping"] = await testPort("google.com", 80);
-
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// SMTP Test (Now via SendGrid API)
+// Email Status Check
 app.get("/test-email", async (req, res) => {
   try {
-    console.log("[DEBUG] Starting SendGrid API test...");
-    console.log("[DEBUG] Env key:", process.env.SENDGRID_API_KEY ? "FOUND" : "MISSING");
-    
     const msg = {
       to: process.env.GMAIL_USER,
-      from: process.env.GMAIL_USER, // Must be verified in SendGrid
-      subject: "SendGrid API Test Reachable",
-      text: "If you see this, your SendGrid API integration is working!"
+      from: process.env.GMAIL_USER,
+      subject: "SendGrid Active",
+      text: "SendGrid API is correctly configured and reachable."
     };
-    
     await sgMail.send(msg);
-    console.log("[DEBUG] API Mail sent successfully");
-    res.json({ success: true, message: "Test email sent via SendGrid API!" });
+    res.json({ success: true, message: "System ready." });
   } catch (err) {
-    console.error("[SENDGRID ERROR]:", err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message, 
-      response: err.response ? err.response.body : null,
-      env_key: process.env.SENDGRID_API_KEY ? "Present" : "MISSING",
-      stack: err.stack 
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
