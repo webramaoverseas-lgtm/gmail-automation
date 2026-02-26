@@ -130,41 +130,24 @@ app.get("/test-email", async (req, res) => {
     
     const bridgeUrl = process.env.GMAIL_BRIDGE_URL;
     if (!bridgeUrl) {
-      return res.status(400).json({ success: false, error: "GMAIL_BRIDGE_URL is missing in Render environment variables." });
+      return res.status(400).json({ success: false, error: "GMAIL_BRIDGE_URL is missing." });
     }
 
-    console.log("[DEBUG] Testing Bridge URL:", bridgeUrl);
-    
-    // Explicitly follow redirects and handle Google's security quirks
     const response = await fetch(bridgeUrl, {
       method: "POST",
-      headers: { "Content-Type": "text/plain" }, // Standard for Google Apps Script
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(payload),
       redirect: 'follow'
     });
     
-    const rawText = await response.text();
-    
-    try {
-      const result = JSON.parse(rawText);
-      if (result.success) {
-        res.json({ success: true, message: "Bridge ready! Test email sent." });
-      } else {
-        throw new Error(result.error || "Bridge failed internally");
-      }
-    } catch (parseErr) {
-      // If parsing fails, it's HTML. This happens if permissions are wrong.
-      console.error("[DEBUG] Non-JSON response received. Likely HTML error page.");
-      res.status(500).json({ 
-        success: false, 
-        error: "Bridge returned HTML instead of JSON.",
-        advice: "1. Ensure you used v2 of the script. 2. Verify 'Who has access' is set to 'Anyone' (NOT anyone with a Google account). 3. Ensure you 'Authorized Access' when prompted.",
-        debugSnippet: rawText.substring(0, 300)
-      });
+    const result = await response.json();
+    if (result.success) {
+      res.json({ success: true, message: "Bridge ready! Test email sent." });
+    } else {
+      throw new Error(result.error || "Bridge failed internally");
     }
   } catch (err) {
-    console.error("[BRIDGE CONNECTION ERROR]:", err.message);
-    res.status(500).json({ success: false, error: "Failed to connect to Bridge: " + err.message });
+    res.status(500).json({ success: false, error: "Bridge error: " + err.message });
   }
 });
 
