@@ -10,17 +10,30 @@ function App() {
   const [stats, setStats] = useState({});
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [connected, setConnected] = useState(null); // null, true, false
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = () => {
-    fetchContacts();
-    fetchStats();
-    fetchTemplates();
+  const refresh = async () => {
+    try {
+      const resp = await axios.get(`${API}/analytics`);
+      setStats(resp.data);
+      const cResp = await axios.get(`${API}/contacts`);
+      setContacts(cResp.data);
+      setConnected(true);
+    } catch (e) {
+      setConnected(false);
+      console.error("Backend offline:", e);
+    }
   };
 
+  useEffect(() => {
+    refresh();
+    fetchTemplates(); // Templates are not part of the health check, fetch once
+    const interval = setInterval(refresh, 10000); // Refresh stats and contacts every 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  // Original fetchContacts and fetchStats are now integrated into refresh for periodic updates
+  // Keeping them separate for potential individual calls if needed, but refresh handles the main data flow.
   const fetchContacts = async () => {
     const res = await axios.get(`${API}/contacts`);
     setContacts(res.data);
@@ -39,22 +52,28 @@ function App() {
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       {/* Sidebar */}
-      <div className="sidebar">
-        <h2 style={{ marginBottom: "40px", color: "var(--accent-primary)" }}>DigitalVibe</h2>
+      <aside className="sidebar">
+        <div className="logo">
+          <h1 style={{ marginBottom: "40px", color: "var(--accent-primary)" }}>DigitalVibe</h1>
+          <div style={{ fontSize: "10px", marginTop: "4px", color: connected ? "#10b981" : "#f43f5e" }}>
+            {connected ? "● Connected" : "● Offline / Disconnected"}
+          </div>
+          <div style={{ fontSize: "9px", opacity: 0.4, marginTop: "2px" }}>{API}</div>
+        </div>
         <button className={`nav-link ${page === "dashboard" ? "active" : ""}`} onClick={() => setPage("dashboard")}>Dashboard</button>
         <button className={`nav-link ${page === "contacts" ? "active" : ""}`} onClick={() => setPage("contacts")}>Contacts</button>
         <button className={`nav-link ${page === "templates" ? "active" : ""}`} onClick={() => setPage("templates")}>Templates</button>
         <button className={`nav-link ${page === "tracking" ? "active" : ""}`} onClick={() => setPage("tracking")}>Tracking</button>
         <button className={`nav-link ${page === "campaign" ? "active" : ""}`} onClick={() => setPage("campaign")}>Campaign</button>
-      </div>
+      </aside>
 
       {/* Main Content */}
       <div style={{ flex: 1, padding: "40px", overflowY: "auto" }}>
         {page === "dashboard" && <Dashboard stats={stats} />}
-        {page === "contacts" && <ContactsTable contacts={contacts} refresh={fetchData} />}
+        {page === "contacts" && <ContactsTable contacts={contacts} refresh={refresh} />}
         {page === "templates" && <Templates templates={templates} fetchTemplates={fetchTemplates} />}
         {page === "tracking" && <Tracking />}
-        {page === "campaign" && <Campaign refresh={fetchData} loading={loading} setLoading={setLoading} />}
+        {page === "campaign" && <Campaign refresh={refresh} loading={loading} setLoading={setLoading} />}
       </div>
     </div>
   );
