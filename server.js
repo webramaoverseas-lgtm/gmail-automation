@@ -134,17 +134,30 @@ app.get("/", (req, res) => {
 // SMTP Test
 app.get("/test-email", async (req, res) => {
   try {
+    console.log("[DEBUG] Starting SMTP test...");
+    console.log("[DEBUG] Env user:", process.env.GMAIL_USER ? "FOUND" : "MISSING");
+    console.log("[DEBUG] Env pass:", process.env.EMAIL_PASS ? "FOUND" : "MISSING");
+    
     await transporter.verify();
-    await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+    console.log("[DEBUG] SMTP Verified!");
+    
+    const info = await transporter.sendMail({
+      from: `Digital Vibe <${process.env.GMAIL_USER}>`,
       to: process.env.GMAIL_USER,
       subject: "SMTP Test Reachable",
       text: "If you see this, your Gmail SMTP is working!"
     });
-    res.json({ success: true, message: "Test email sent!" });
+    console.log("[DEBUG] Mail sent:", info.messageId);
+    res.json({ success: true, message: "Test email sent!", id: info.messageId });
   } catch (err) {
-    console.error("SMTP Error:", err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error("[SMTP ERROR]:", err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message, 
+      code: err.code,
+      command: err.command,
+      stack: err.stack 
+    });
   }
 });
 
