@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const net = require("net");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const multer = require("multer");
@@ -140,6 +141,46 @@ async function seedTemplates() {
 // Health Check
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "DigitalVibe Backend is running!" });
+});
+
+app.get("/test-network", async (req, res) => {
+  const results = {
+    dns: {},
+    connectivity: {}
+  };
+
+  try {
+    // 1. DNS Resolution
+    results.dns.ipv4 = await new Promise(r => dns.resolve4("smtp.gmail.com", (err, addr) => r(err ? err.message : addr)));
+    results.dns.ipv6 = await new Promise(r => dns.resolve6("smtp.gmail.com", (err, addr) => r(err ? err.message : addr)));
+    results.dns.lookup = await new Promise(r => dns.lookup("smtp.gmail.com", (err, addr) => r(err ? err.message : addr)));
+
+    // 2. TCP Connectivity
+    const testPort = (host, port) => new Promise(r => {
+      const socket = new net.Socket();
+      socket.setTimeout(5000);
+      socket.on("connect", () => {
+        socket.destroy();
+        r({ status: "success" });
+      });
+      socket.on("timeout", () => {
+        socket.destroy();
+        r({ status: "timeout" });
+      });
+      socket.on("error", (err) => {
+        socket.destroy();
+        r({ status: "error", message: err.message });
+      });
+      socket.connect(port, host);
+    });
+
+    results.connectivity["465"] = await testPort("smtp.gmail.com", 465);
+    results.connectivity["587"] = await testPort("smtp.gmail.com", 587);
+
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // SMTP Test
