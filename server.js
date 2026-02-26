@@ -117,6 +117,11 @@ async function seedTemplates() {
    ROUTES
 ========================= */
 
+// Health Check
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "DigitalVibe Backend is running!" });
+});
+
 // Tracking & Analytics
 app.get("/analytics", async (req, res) => {
   try {
