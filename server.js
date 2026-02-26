@@ -36,19 +36,15 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log("Mongo Error:", err));
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "74.125.143.108", // Force Gmail IPv4 (Resolved from smtp.gmail.com)
   port: 465,
   secure: true,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  lookup: (hostname, options, callback) => {
-    console.log(`[DNS] Resolving ${hostname} (forcing IPv4)`);
-    dns.lookup(hostname, { family: 4 }, (err, address, family) => {
-      console.log(`[DNS] Resolved ${hostname} to ${address} (family: ${family})`);
-      callback(err, address, family);
-    });
+  tls: {
+    servername: "smtp.gmail.com" // Critical for SSL validation when using IP
   },
   connectionTimeout: 30000,
   greetingTimeout: 30000,
@@ -176,7 +172,7 @@ app.get("/test-network", async (req, res) => {
 
     results.connectivity["465"] = await testPort("smtp.gmail.com", 465);
     results.connectivity["587"] = await testPort("smtp.gmail.com", 587);
-    results.connectivity["443"] = await testPort("smtp.gmail.com", 443);
+    results.connectivity["direct_ip_465"] = await testPort("74.125.143.108", 465); // Test direct IPv4
     results.connectivity["google_ping"] = await testPort("google.com", 80);
 
     res.json(results);

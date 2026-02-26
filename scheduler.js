@@ -10,19 +10,15 @@ if (dns.setDefaultResultOrder) {
 const { fillTemplate } = require("./templateEngine");
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "74.125.143.108",
   port: 465,
   secure: true,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  lookup: (hostname, options, callback) => {
-    console.log(`[SCHEDULER DNS] Resolving ${hostname} (forcing IPv4)`);
-    dns.lookup(hostname, { family: 4 }, (err, address, family) => {
-      console.log(`[SCHEDULER DNS] Resolved ${hostname} to ${address} (family: ${family})`);
-      callback(err, address, family);
-    });
+  tls: {
+    servername: "smtp.gmail.com"
   },
   connectionTimeout: 30000,
   greetingTimeout: 30000,
