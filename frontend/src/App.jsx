@@ -253,7 +253,7 @@ function ContactsTable({ contacts, refresh }) {
                 <td><span className={`badge badge-${c.stage}`}>{c.stage}</span></td>
                 <td>Step {c.sequenceStep + 1}</td>
                 <td>
-                    {c.optedOut ? <span style={{color: "var(--badge-lto)"}}>Opted Out</span> : (c.replied ? "Replied ✅" : "Pending ⏳")}
+                    {c.optedOut ? <span style={{color: "var(--badge-lto)"}}>Opted Out</span> : (c.replied ? "Replied ✅" : "Sent 📩")}
                 </td>
                 <td>
                   {!c.replied && !c.optedOut && c.stage !== "converted" && (
