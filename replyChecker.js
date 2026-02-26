@@ -78,11 +78,12 @@ async function checkReplies() {
 
         await contact.save();
 
-        // Trigger scheduler for this contact immediately
-        await runScheduler(contact._id.toString());
+        // Mark as seen immediately so we don't process it again in the next tick
+        await connection.addFlags(id, "\\Seen");
 
-        // Mark as seen so we don't process it again
-        await connection.addFlags(id, "\Seen");
+        // Trigger scheduler for this contact immediately
+        // (The scheduler now strictly checks nextFollowUpAt, preventing double-sends)
+        await runScheduler(contact._id.toString());
       }
     }
   } catch (err) {

@@ -16,13 +16,17 @@ async function runScheduler(specificContactId = null) {
   const now = new Date();
 
   // Query contacts: either a specific one (immediate trigger) OR all due ones
-  let query;
-  if (specificContactId && (typeof specificContactId === 'string' || mongoose.Types.ObjectId.isValid(specificContactId))) {
-    query = { _id: specificContactId };
-  } else if (specificContactId && typeof specificContactId === 'object' && specificContactId._id) {
-    query = { _id: specificContactId._id };
-  } else {
-    query = { nextFollowUpAt: { $lte: now }, optedOut: false, stage: { $nin: ["converted"] } };
+  let query = { 
+    nextFollowUpAt: { $lte: now }, 
+    optedOut: false, 
+    stage: { $nin: ["converted"] } 
+  };
+
+  if (specificContactId) {
+    const id = (typeof specificContactId === 'object' && specificContactId._id) 
+               ? specificContactId._id 
+               : specificContactId;
+    query._id = id;
   }
 
   const contacts = await Contact.find(query);
