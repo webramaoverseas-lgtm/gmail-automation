@@ -41,30 +41,34 @@ async function checkReplies() {
       if (contact) {
         console.log(`Match found! Reply from: ${fromEmail}`);
         
-        const snippet = parsed.text.substring(0, 200);
+        const snippet = parsed.text.substring(0, 200).toLowerCase();
         
-        // Update contact
-        contact.replied = true;
-        contact.repliedAt = new Date();
-        contact.lastReplySnippet = snippet;
+        // --- SENTIMENT ANALYSIS ---
+        const negativeKeywords = ["not interested", "unsubscribe", "stop", "remove", "don't contact", "no thanks", "discard", "quit"];
+        const isNegative = negativeKeywords.some(keyword => snippet.includes(keyword));
+
+        if (isNegative) {
+          console.log(`[SENTIMENT] Negative reply detected from ${fromEmail}. Opting out.`);
+          contact.optedOut = true;
+        } else {
+          console.log(`[SENTIMENT] Positive/Neutral reply from ${fromEmail}. Proceeding with sequence.`);
+          contact.replied = true;
+          contact.repliedAt = new Date();
+          contact.nextFollowUpAt = new Date(); // Trigger immediate next action on cron
+        }
+
+        contact.lastReplySnippet = parsed.text.substring(0, 200);
         contact.replyHistory.push({
           body: parsed.text,
           date: new Date()
         });
 
-        // The user's logic: "If contact replies at ANY stage -> they jump to Converted"
-        // Wait, the user also said "reply then conversion email". Let's refine:
-        // If they reply to Welcome -> Conversion
-        // If they reply to Re-engagement -> Conversion
-        // If they reply to Conversion -> Converted
-        // This is handled in scheduler.js logic.
-        
-        // Immediate Trigger: Set nextFollowUpAt to now
-        contact.nextFollowUpAt = new Date();
         await contact.save();
 
-        // Trigger scheduler for this contact immediately
-        await runScheduler(contact._id.toString());
+        if (!isNegative) {
+          // Trigger scheduler for this contact immediately if interested
+          await runScheduler(contact._id.toString());
+        }
 
         // Mark as seen so we don't process it again
         await connection.addFlags(id, "\Seen");
