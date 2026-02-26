@@ -6,13 +6,14 @@ const nodemailer = require("nodemailer");
 const { fillTemplate } = require("./templateEngine");
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // Use STARTTLS
+  service: "gmail",
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
-  }
+  },
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000
 });
 
 async function runScheduler(specificContactId = null) {

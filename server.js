@@ -31,22 +31,20 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log("Mongo Error:", err));
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // Use STARTTLS
+  service: "gmail",
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  connectionTimeout: 10000, // 10s
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
+  connectionTimeout: 30000, // 30s for cloud
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
   logger: true,
   debug: true
 });
 
 if (!process.env.GMAIL_USER || !process.env.EMAIL_PASS) {
-  console.error("CRITICAL: GMAIL_USER or EMAIL_PASS environment variables are MISSING!");
+  console.error("CRITICAL: GMAIL_USER or EMAIL_PASS environment variables are MISSING on Render!");
 }
 
 /* =========================
@@ -156,6 +154,8 @@ app.get("/test-email", async (req, res) => {
       error: err.message, 
       code: err.code,
       command: err.command,
+      env_user: process.env.GMAIL_USER ? "Present" : "MISSING",
+      env_pass: process.env.EMAIL_PASS ? "Present" : "MISSING",
       stack: err.stack 
     });
   }
