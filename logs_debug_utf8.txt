@@ -1,0 +1,44 @@
+﻿[dotenv@17.3.1] injecting env (3) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+Latest Logs: [
+  {
+    "_id": "69b79d0a87552807a5531181",
+    "contactId": "69b796c0e6cd1411c13cc796",
+    "templateId": "69b79cd054279bc4618287cc",
+    "sentAt": "2026-03-16T06:02:50.350Z",
+    "status": "failed",
+    "error": "Failed to parse URL from undefined",
+    "__v": 0
+  },
+  {
+    "_id": "69b7955c5c7c709a6c99720f",
+    "contactId": "69b6bb0a671bad8944a9ca13",
+    "templateId": "699ef6b157bac1c7ba82283f",
+    "sentAt": "2026-03-16T05:30:04.409Z",
+    "status": "sent",
+    "__v": 0
+  },
+  {
+    "_id": "69b79559fa4522a3bf4d5c1b",
+    "contactId": "69b6bb0a671bad8944a9ca13",
+    "sentAt": "2026-03-16T05:30:01.687Z",
+    "status": "failed",
+    "error": "Failed to parse URL from undefined",
+    "__v": 0
+  },
+  {
+    "_id": "69b795592dbec7e6181e6c66",
+    "contactId": "69b6bb0a671bad8944a9ca13",
+    "sentAt": "2026-03-16T05:30:01.670Z",
+    "status": "failed",
+    "error": "GMAIL_BRIDGE_URL is not defined in environment variables.",
+    "__v": 0
+  },
+  {
+    "_id": "69b7955987552807a5530de6",
+    "contactId": "69b6bb0a671bad8944a9ca13",
+    "sentAt": "2026-03-16T05:30:01.670Z",
+    "status": "failed",
+    "error": "Failed to parse URL from undefined",
+    "__v": 0
+  }
+]

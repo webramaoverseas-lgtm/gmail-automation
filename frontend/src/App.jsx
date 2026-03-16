@@ -353,9 +353,11 @@ function Templates({ templates, fetchTemplates }) {
 
               <div style={{ marginBottom: "24px" }}>
                 <label style={{ display: "block", marginBottom: "12px", fontSize: "14px", fontWeight: "600" }}>Live Preview (Example: John Doe)</label>
-                <div 
+                <iframe 
                   className="preview-box"
-                  dangerouslySetInnerHTML={{ __html: editing.htmlBody.replace(/\{\{name\}\}/g, "John Doe") }}
+                  title="Template Preview"
+                  srcDoc={editing.htmlBody.replace(/\{\{name\}\}/g, "John Doe")}
+                  style={{ width: "100%", height: "400px", border: "none" }}
                 />
               </div>
 

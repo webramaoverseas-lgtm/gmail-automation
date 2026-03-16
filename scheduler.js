@@ -8,6 +8,7 @@ if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }
 const { fillTemplate } = require("./templateEngine");
+const { sendEmail } = require("./mailer");
 
 // No transporter needed for SendGrid API
 
@@ -110,17 +111,13 @@ async function runScheduler(specificContactId = null) {
       const subject = fillTemplate(template.subject, { name: contact.name });
       console.log(`[SCHEDULER] Sending follow-up to ${contact.email} via Gmail Bridge...`);
       
-      const response = await fetch(process.env.GMAIL_BRIDGE_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          to: contact.email,
-          subject: subject,
-          body: html,
-          isHtml: true
-        })
+      const result = await sendEmail({
+        to: contact.email,
+        subject: subject,
+        body: html,
+        isHtml: true
       });
 
-      const result = await response.json();
       if (!result.success) throw new Error(result.error);
       
       console.log(`[SCHEDULER] Success!`);

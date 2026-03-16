@@ -39,7 +39,22 @@ async function checkReplies() {
 
       const contact = await Contact.findOne({ email: fromEmail });
       if (contact) {
-        console.log(`Match found! Reply from: ${fromEmail}`);
+        console.log(`Potential match! Email from: ${fromEmail}`);
+        
+        // --- REFINED REPLY DETECTION ---
+        const subject = parsed.subject || "";
+        const emailDate = parsed.date;
+        const lastSentAt = contact.lastSentAt || new Date(0);
+
+        const isReplySubject = subject.toLowerCase().startsWith("re:");
+        const isAfterLastSent = emailDate > lastSentAt;
+
+        if (!isReplySubject && !isAfterLastSent) {
+          console.log(`[SKIP] Email from ${fromEmail} is NOT a reply (Subject: "${subject}", Date: ${emailDate}, Last Sent: ${lastSentAt})`);
+          continue;
+        }
+
+        console.log(`Match confirmed! Valid reply from: ${fromEmail}`);
         
         const snippet = parsed.text.substring(0, 200).toLowerCase();
         console.log(`[DEBUG] Analyzing snippet: "${snippet}"`);

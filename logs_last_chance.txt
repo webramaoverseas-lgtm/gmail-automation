@@ -1,0 +1,47 @@
+﻿[dotenv@17.3.1] injecting env (3) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+Latest Logs: [
+  {
+    "_id": "69b79fc2863d72fe55a0e8f2",
+    "contactId": "69b796c0e6cd1411c13cc796",
+    "templateId": "69b79fb554279bc4618287e8",
+    "sentAt": "2026-03-16T06:14:26.926Z",
+    "status": "sent",
+    "__v": 0
+  },
+  {
+    "_id": "69b79f7a87552807a553130c",
+    "contactId": "69b796c0e6cd1411c13cc796",
+    "templateId": "69b79f6e54279bc4618287e7",
+    "sentAt": "2026-03-16T06:13:14.113Z",
+    "status": "failed",
+    "error": "Failed to parse URL from undefined",
+    "__v": 0
+  },
+  {
+    "_id": "69b79e8887552807a5531280",
+    "contactId": "69b796c0e6cd1411c13cc796",
+    "templateId": "69b79e7e54279bc4618287dd",
+    "sentAt": "2026-03-16T06:09:12.101Z",
+    "status": "failed",
+    "error": "Failed to parse URL from undefined",
+    "__v": 0
+  },
+  {
+    "_id": "69b79e4f87552807a5531221",
+    "contactId": "69b796c0e6cd1411c13cc796",
+    "templateId": "69b79e4354279bc4618287dc",
+    "sentAt": "2026-03-16T06:08:15.158Z",
+    "status": "failed",
+    "error": "Failed to parse URL from undefined",
+    "__v": 0
+  },
+  {
+    "_id": "69b79e0687552807a55311c2",
+    "contactId": "69b796c0e6cd1411c13cc796",
+    "templateId": "69b79dfd54279bc4618287da",
+    "sentAt": "2026-03-16T06:07:02.234Z",
+    "status": "failed",
+    "error": "Failed to parse URL from undefined",
+    "__v": 0
+  }
+]
